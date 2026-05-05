@@ -331,11 +331,9 @@ class WebRCONApp(tk.Tk):
         config = {
             'bg': COLORS['bg_elevated'],
             'fg': COLORS['text_primary'],
-            'font': ('SF Pro Display', 12, 'normal'),
+            'font': _font('display', 12, 'normal'),
             'relief': 'flat',
             'bd': 0,
-            'padx': SPACE['4'],
-            'pady': SPACE['2'],
             'cursor': 'hand2',
         }
 
