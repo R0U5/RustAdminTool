@@ -99,16 +99,6 @@ RAT.py includes a comprehensive item database (`items.json`) with:
 
 Use the "Give Item" dialog to quickly find and give items to players.
 
-## Acknowledgments
-
-This project is based on the popular **RustAdmin** tool (found in "Rust Admin Release" folder), which is a Qt-based Windows application. R.A.T. reimplements these features in Python with cross-platform support.
-
-Key features adapted from RustAdmin:
-- Player list parsing regex pattern
-- Command mappings (kick, ban, mute, etc.)
-- Location/coordinate support
-- Item database structure
-
 ## Disclaimer
 
 This tool is not affiliated with Facepunch Studios or Rust. Use responsibly and ensure you have proper authorization to access the server's RCON interface.
