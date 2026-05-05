@@ -3,11 +3,18 @@ import json
 import asyncio
 import datetime
 import threading
-import customtkinter as ctk
-from tkinter import messagebox, ttk, Menu
-import websockets
+try:
+    import customtkinter as ctk
+    from tkinter import messagebox, ttk, Menu
+    import websockets
+except ImportError as e:
+    print(f"Missing required module: {e}")
+    print("Please install required dependencies:")
+    print("  pip install customtkinter websockets")
+    print("Or see requirements.txt for full list.")
+    exit(1)
+
 import re
-import time
 import urllib.parse
 import base64
 import hashlib
