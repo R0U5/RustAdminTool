@@ -1,6 +1,6 @@
 # Rust Admin Tool (R.A.T.)
 
-A Python-based GUI application for managing Rust game servers via RCON (Remote Console) protocol. This tool is inspired by and based on the popular **RustAdmin** application found in the "Rust Admin Release" folder.
+A Python-based GUI application for managing Rust game servers via RCON (Remote Console) protocol.
 
 ## Features
 
