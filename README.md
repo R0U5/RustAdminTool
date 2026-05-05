@@ -1,18 +1,29 @@
 # Rust Admin Tool (R.A.T.)
 
-A Python-based GUI application for managing Rust game servers via RCON (Remote Console) protocol. Features a modern tkinter interface with real-time console output, player management, and command execution.
+A Python-based GUI application for managing Rust game servers via RCON (Remote Console) protocol. This tool is inspired by and based on the popular **RustAdmin** application found in the "Rust Admin Release" folder.
 
 ## Features
 
+### Core Features
 - **Real-time Console** - View server messages, chat, and command responses in real-time
 - **Player Management** - Monitor online players with SteamID, ping, and connection time
+- **Player Actions** - Right-click or use buttons to Kick, Ban, Mute, Teleport, or Kill players
+- **Item Database** - Built-in database of all Rust items for quick item giving
 - **Player Search** - Filter players by name, SteamID, or other attributes
 - **Player Sorting** - Sort player list by any column (Name, Ping, SteamID, Connected time)
 - **Command Execution** - Send RCON commands directly from the GUI
+- **Quick Commands** - One-click buttons for common commands (status, players, banlistex, serverinfo)
+- **Ban List Viewer** - View and manage server ban list
 - **Auto Status Polling** - Automatically refreshes server status every 15 seconds
-- **Colored Logs** - Tag-based color coding for different message types ([OK], [ERROR], [Chat], etc.)
-- **Connection Management** - Easy connect/disconnect with saved credentials
-- **Cross-platform** - Works on Windows, Linux, and macOS (requires Python 3.7+)
+- **Colored Logs** - Tag-based color coding for different message types
+
+### Improvements Over Original RustAdmin
+- Open source Python implementation
+- Cross-platform compatibility (Windows, Linux, macOS)
+- Modern tkinter-based GUI
+- Better error handling and connection management
+- Improved player parsing using RustAdmin's regex patterns
+- Thread-safe operations
 
 ## Requirements
 
@@ -24,7 +35,7 @@ A Python-based GUI application for managing Rust game servers via RCON (Remote C
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/RustAdminTool.git
+git clone https://github.com/R0U5/RustAdminTool.git
 cd RustAdminTool
 ```
 
@@ -40,16 +51,33 @@ python RAT.py
 
 ## Usage
 
+### Connecting to a Server
 1. Launch the application
 2. Enter your Rust server IP, port (default: 28015), and RCON password
-3. Click "Connect" in the Server menu or use the default credentials if saved
+3. Click "Connect" or use Server menu
 4. Monitor the console for server messages
-5. Use the Players tab to view and search online players
-6. Type commands in the command box and press Enter or click Send
+
+### Managing Players
+- **View Players**: Click the "Players" tab to see all online players
+- **Search Players**: Use the search box to filter by name or SteamID
+- **Player Actions**: Right-click any player or select and use action buttons:
+  - **Kick** - Remove player from server
+  - **Ban** - Permanently ban player
+  - **Mute** - Mute player chat
+  - **Teleport** - Teleport yourself to the player
+  - **Give Item** - Give items to player from the item database
+  - **Kill** - Kill the player in-game
+
+### Commands
+- Type commands in the command box and press Enter or click Send
+- Use Quick Command buttons for common commands
+- View ban list via Tools menu
 
 ## Configuration
 
-The application saves your connection settings to `~/Documents/RAT_config.JSON`. Passwords are obfuscated (not encrypted - use with caution).
+The application saves your connection settings to `~/Documents/RAT_config.JSON`. 
+- Passwords are obfuscated using XOR encryption with a salt file
+- Not cryptographically secure - use with caution on shared computers
 
 ## Message Types
 
@@ -60,6 +88,26 @@ The application saves your connection settings to `~/Documents/RAT_config.JSON`.
 - `[Chat]` - In-game chat messages
 - `[Server]` - Server responses
 - `[Command]` - Sent commands
+- `[Ban]` - Ban list entries
+
+## Item Database
+
+RAT.py includes a comprehensive item database (`items.json`) with:
+- Item names and shortnames
+- Categories (Weapons, Construction, Resources, etc.)
+- Item descriptions
+
+Use the "Give Item" dialog to quickly find and give items to players.
+
+## Acknowledgments
+
+This project is based on the popular **RustAdmin** tool (found in "Rust Admin Release" folder), which is a Qt-based Windows application. R.A.T. reimplements these features in Python with cross-platform support.
+
+Key features adapted from RustAdmin:
+- Player list parsing regex pattern
+- Command mappings (kick, ban, mute, etc.)
+- Location/coordinate support
+- Item database structure
 
 ## Disclaimer
 
