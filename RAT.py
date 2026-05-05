@@ -19,7 +19,51 @@ PLAYER_REGEX = re.compile(
 )
 TAG_REGEX = re.compile(r"\[[^\]]+\]")
 
-# --- Config Manager ---
+# Color palette - Dark theme (section 2.2)
+COLORS = {
+    'bg_base': '#0A0A0F',
+    'bg_elevated': '#12121A',
+    'bg_surface': '#1A1A24',
+    'bg_hover': '#22222E',
+    'bg_active': '#2A2A38',
+    'border_subtle': '#1E1E2A',
+    'border_default': '#2A2A3A',
+    'border_focus': '#4A6CF7',
+    'text_primary': '#E8E8ED',
+    'text_secondary': '#8888A0',
+    'text_tertiary': '#55556A',
+    'accent': '#4A6CF7',
+    'accent_hover': '#5B7BFF',
+    'accent_subtle': '#4A6CF712',
+    'success': '#34D399',
+    'success_subtle': '#34D39912',
+    'warning': '#FBBF24',
+    'warning_subtle': '#FBBF2412',
+    'danger': '#F87171',
+    'danger_subtle': '#F8717112',
+    'info': '#60A5FA',
+    'info_subtle': '#60A5FA12',
+}
+
+# Spacing scale (section 4.1)
+SPACE = {
+    '1': 4,   # 0.25rem
+    '2': 8,   # 0.5rem
+    '3': 12,  # 0.75rem
+    '4': 16,  # 1rem
+    '5': 20,  # 1.25rem
+    '6': 24,  # 1.5rem
+    '8': 32,  # 2rem
+}
+
+# Border radius scale (section 6.1)
+RADIUS = {
+    'sm': 4,
+    'md': 8,
+    'lg': 12,
+    'xl': 16,
+}
+
 class ConfigManager:
     def __init__(self, path):
         self.path = path
@@ -72,7 +116,7 @@ class ConfigManager:
         except Exception as e:
             print(f"Failed to save config: {e}")
 
-# --- Logger with tag coloring ---
+
 class Logger:
     def __init__(self, widget, log_file, tag_colors, tag_whitelist):
         self.widget = widget
@@ -83,9 +127,8 @@ class Logger:
         self._setup_tags()
 
     def _setup_tags(self):
-        """Pre-configure common tags for better performance"""
         for tag in self.tag_whitelist:
-            color = self.tag_colors[len(self.tag_color_map) % len(self.tag_colors)]
+            color = self.tag_colors.get(tag, COLORS['text_secondary'])
             self.tag_color_map[tag] = color
             try:
                 self.widget.tag_config(tag, foreground=color)
@@ -100,20 +143,18 @@ class Logger:
         tags = TAG_REGEX.findall(message)
         start_index = self.widget.index(tk.END)
         self.widget.insert(tk.END, message + "\n")
-        
-        # Apply tags efficiently
-        for tag in set(tags):  # Use set to avoid duplicate work
+
+        for tag in set(tags):
             if tag not in self.tag_whitelist:
                 continue
             if tag not in self.tag_color_map:
-                self.tag_color_map[tag] = self.tag_colors[len(self.tag_color_map) % len(self.tag_colors)]
+                self.tag_color_map[tag] = self.tag_colors.get(tag, COLORS['text_secondary'])
             for match in re.finditer(re.escape(tag), message):
                 self.widget.tag_add(tag, f"{start_index}+{match.start()}c", f"{start_index}+{match.end()}c")
-        
+
         self.widget.see(tk.END)
         self.widget.configure(state="disabled")
-        
-        # Async file write to avoid blocking UI
+
         threading.Thread(target=self._write_log, args=(message,), daemon=True).start()
 
     def _write_log(self, message):
@@ -123,7 +164,7 @@ class Logger:
         except Exception as e:
             print(f"Failed to write log: {e}")
 
-# --- Item Database ---
+
 class ItemDatabase:
     def __init__(self, path):
         self.path = path
@@ -146,7 +187,6 @@ class ItemDatabase:
             return self._search_cache[query]
         results = [item for item in self.items if query in item.get("Name", "").lower() or query in item.get("Shortname", "").lower()]
         self._search_cache[query] = results
-        # Limit cache size
         if len(self._search_cache) > 100:
             self._search_cache.clear()
         return results
@@ -154,7 +194,7 @@ class ItemDatabase:
     def get_categories(self):
         return sorted(self.categories)
 
-# --- Player Manager ---
+
 class PlayerManager:
     def __init__(self, treeview, app):
         self.tree = treeview
@@ -165,7 +205,7 @@ class PlayerManager:
         lines = message.splitlines()
         self.tree.delete(*self.tree.get_children())
         self._cached_players.clear()
-        
+
         for line in lines:
             match = PLAYER_REGEX.match(line.strip())
             if match:
@@ -223,19 +263,16 @@ class PlayerManager:
             return self.tree.item(selection[0])["values"]
         return None
 
-# --- Main GUI + WebSocket ---
+
 class WebRCONApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Rust Admin Tool (R.A.T.)")
-        self.geometry("1100x750")
-        self.minsize(400, 400)
+        self.title("Rust Admin Tool")
+        self.geometry("1200x800")
+        self.minsize(800, 600)
 
-        # Setup style for better look
-        self.style = ttk.Style()
-        if "clam" in self.style.theme_names():
-            self.style.theme_use("clam")
-        
+        self.configure(bg=COLORS['bg_base'])
+
         self.CONFIG_PATH = os.path.join(os.path.expanduser("~"), "Documents", "RAT_config.JSON")
         self.LOG_PATH = os.path.join(os.path.expanduser("~"), "Documents", "RAT_log.txt")
         self.ITEMS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "items.json")
@@ -243,8 +280,21 @@ class WebRCONApp(tk.Tk):
         self.DEFAULT_IP = "SET_YOUR_SERVER_IP_HERE"
         self.DEFAULT_PORT = 28015
         self.DEFAULT_PASSWORD = "ADMIN_PASSWORD_HERE"
-        self.TAG_COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9"]
-        self.TAG_WHITELIST = {"[OK]", "[ERROR]", "[WARN]", "[INFO]", "[Chat]", "[Server]", "[Command]", "[Players]", "[Hostname]", "[Version]", "[Map]", "[Ban]"}
+        self.TAG_COLORS = {
+            "[OK]": COLORS['success'],
+            "[ERROR]": COLORS['danger'],
+            "[WARN]": COLORS['warning'],
+            "[INFO]": COLORS['info'],
+            "[Chat]": COLORS['accent'],
+            "[Server]": COLORS['text_secondary'],
+            "[Command]": COLORS['text_primary'],
+            "[Players]": COLORS['success'],
+            "[Hostname]": COLORS['text_primary'],
+            "[Version]": COLORS['text_secondary'],
+            "[Map]": COLORS['text_secondary'],
+            "[Ban]": COLORS['danger'],
+        }
+        self.TAG_WHITELIST = set(self.TAG_COLORS.keys())
 
         self.config_mgr = ConfigManager(self.CONFIG_PATH)
         self.item_db = ItemDatabase(self.ITEMS_PATH)
@@ -265,166 +315,315 @@ class WebRCONApp(tk.Tk):
         threading.Thread(target=self._run_loop, daemon=True).start()
         self._init_ui()
 
+    def _create_button(self, parent, text, command, style='secondary', **kwargs):
+        """Create button with proper hierarchy (section 5.1)"""
+        config = {
+            'bg': COLORS['bg_elevated'],
+            'fg': COLORS['text_primary'],
+            'font': ('SF Pro Display', 12, 'normal'),
+            'relief': 'flat',
+            'bd': 0,
+            'padx': SPACE['4'],
+            'pady': SPACE['2'],
+            'cursor': 'hand2',
+        }
+
+        if style == 'primary':
+            config['bg'] = COLORS['accent']
+            config['fg'] = COLORS['bg_base']
+            config['font'] = ('SF Pro Display', 12, 'medium')
+        elif style == 'destructive':
+            config['bg'] = COLORS['danger_subtle']
+            config['fg'] = COLORS['danger']
+            config['activebackground'] = COLORS['danger']
+            config['activeforeground'] = 'white'
+        elif style == 'ghost':
+            config['bg'] = 'transparent'
+            config['fg'] = COLORS['accent']
+
+        config.update(kwargs)
+        btn = tk.Button(parent, **config)
+        btn.configure(activebackground=COLORS['bg_hover'] if style != 'primary' else COLORS['accent_hover'])
+
+        if command:
+            btn.configure(command=command)
+
+        # Hover effects
+        def on_enter(e):
+            if style == 'primary':
+                btn.configure(bg=COLORS['accent_hover'])
+            elif style == 'destructive':
+                btn.configure(bg=COLORS['danger'])
+            else:
+                btn.configure(bg=COLORS['bg_hover'])
+
+        def on_leave(e):
+            if style == 'primary':
+                btn.configure(bg=COLORS['accent'])
+            elif style == 'destructive':
+                btn.configure(bg=COLORS['danger_subtle'])
+            else:
+                btn.configure(bg=config['bg'])
+
+        btn.bind('<Enter>', on_enter)
+        btn.bind('<Leave>', on_leave)
+
+        return btn
+
+    def _create_entry(self, parent, **kwargs):
+        """Create input with modern styling (section 5.4)"""
+        config = {
+            'bg': COLORS['bg_surface'],
+            'fg': COLORS['text_primary'],
+            'insertbackground': COLORS['text_primary'],
+            'relief': 'flat',
+            'bd': 0,
+            'highlightthickness': 1,
+            'highlightbackground': COLORS['border_default'],
+            'highlightcolor': COLORS['border_focus'],
+            'font': ('SF Pro Display', 12),
+            'padx': SPACE['3'],
+            'pady': SPACE['2'],
+        }
+        config.update(kwargs)
+        return tk.Entry(parent, **config)
+
     def _init_ui(self):
         config = self.config_mgr.load()
         ip = config.get("ip", self.DEFAULT_IP)
         port = config.get("port", self.DEFAULT_PORT)
         password = config.get("password", self.DEFAULT_PASSWORD)
 
-        # Configure colors
-        bg_color = "#2B2B2B"
-        fg_color = "#E0E0E0"
-        entry_bg = "#3C3C3C"
-        
-        self.configure(bg=bg_color)
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure('TNotebook', background=COLORS['bg_base'], borderwidth=0)
+        style.configure('TNotebook.Tab',
+                       background=COLORS['bg_elevated'],
+                       foreground=COLORS['text_secondary'],
+                       padding=(SPACE['4'], SPACE['2']),
+                       font=('SF Pro Display', 11, 'medium'),
+                       borderwidth=0)
+        style.map('TNotebook.Tab',
+                 background=[('selected', COLORS['bg_elevated'])],
+                 foreground=[('selected', COLORS['accent'])])
+        style.configure('Treeview',
+                       background=COLORS['bg_surface'],
+                       foreground=COLORS['text_primary'],
+                       fieldbackground=COLORS['bg_surface'],
+                       rowheight=40,
+                       font=('SF Mono', 11),
+                       borderwidth=0)
+        style.configure('Treeview.Heading',
+                       background=COLORS['bg_elevated'],
+                       foreground=COLORS['text_secondary'],
+                       font=('SF Pro Display', 10, 'medium'),
+                       borderwidth=0,
+                       padding=(SPACE['3'], SPACE['2']))
+        style.map('Treeview.Heading',
+                 background=[('active', COLORS['bg_hover'])])
+        style.map('Treeview',
+                  background=[('selected', COLORS['accent_subtle'][:7] + '33')])
 
         # Menu bar
-        menubar = tk.Menu(self, bg=bg_color, fg=fg_color, activebackground="#404040", activeforeground=fg_color)
-        server_menu = tk.Menu(menubar, tearoff=0, bg=bg_color, fg=fg_color, activebackground="#404040", activeforeground=fg_color)
+        menubar = tk.Menu(self, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
+                          activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'],
+                          bd=0, relief='flat')
+        server_menu = tk.Menu(menubar, tearoff=0, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
+                              activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'])
         server_menu.add_command(label="Connect", command=self._connect)
         server_menu.add_command(label="Disconnect", command=self._disconnect)
         server_menu.add_separator()
         server_menu.add_command(label="Exit", command=self._on_close)
         menubar.add_cascade(label="Server", menu=server_menu)
 
-        tools_menu = tk.Menu(menubar, tearoff=0, bg=bg_color, fg=fg_color, activebackground="#404040", activeforeground=fg_color)
+        tools_menu = tk.Menu(menubar, tearoff=0, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
+                              activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'])
         tools_menu.add_command(label="Ban List", command=self._show_banlist)
         tools_menu.add_command(label="Player List", command=lambda: asyncio.run_coroutine_threadsafe(self._send_json_command("players"), self.loop))
         menubar.add_cascade(label="Tools", menu=tools_menu)
 
         self.config(menu=menubar)
 
-        # Connection frame with better styling
-        top = tk.Frame(self, bg=bg_color, relief=tk.RAISED, bd=1)
-        top.pack(fill=tk.X, padx=10, pady=5)
-        
-        tk.Label(top, text="IP:", bg=bg_color, fg=fg_color).pack(side=tk.LEFT, padx=(5, 2))
-        self.ip_entry = tk.Entry(top, width=15, bg=entry_bg, fg=fg_color, insertbackground=fg_color, relief=tk.SOLID, bd=1)
+        # Top bar - Connection frame
+        top = tk.Frame(self, bg=COLORS['bg_base'], height=56)
+        top.pack(fill=tk.X, padx=SPACE['4'], pady=(SPACE['3'], 0))
+        top.pack_propagate(False)
+
+        # Left side - Logo/Title
+        title_label = tk.Label(top, text="R.A.T.", bg=COLORS['bg_base'], fg=COLORS['accent'],
+                               font=('SF Pro Display', 14, 'bold'))
+        title_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
+
+        # Connection inputs
+        tk.Label(top, text="IP", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
+                 font=('SF Pro Display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], 2))
+        self.ip_entry = self._create_entry(top, width=15)
         self.ip_entry.insert(0, ip)
         self.ip_entry.pack(side=tk.LEFT, padx=2)
-        
-        tk.Label(top, text="Port:", bg=bg_color, fg=fg_color).pack(side=tk.LEFT, padx=(10, 2))
-        self.port_entry = tk.Entry(top, width=6, bg=entry_bg, fg=fg_color, insertbackground=fg_color, relief=tk.SOLID, bd=1)
+
+        tk.Label(top, text="Port", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
+                 font=('SF Pro Display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+        self.port_entry = self._create_entry(top, width=6)
         self.port_entry.insert(0, str(port))
         self.port_entry.pack(side=tk.LEFT, padx=2)
-        
-        tk.Label(top, text="Password:", bg=bg_color, fg=fg_color).pack(side=tk.LEFT, padx=(10, 2))
-        self.password_entry = tk.Entry(top, show="*", width=12, bg=entry_bg, fg=fg_color, insertbackground=fg_color, relief=tk.SOLID, bd=1)
+
+        tk.Label(top, text="Password", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
+                 font=('SF Pro Display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+        self.password_entry = self._create_entry(top, show="*", width=12)
         self.password_entry.insert(0, password)
         self.password_entry.pack(side=tk.LEFT, padx=2)
-        
-        self.connect_btn = tk.Button(top, text="Connect", command=self._connect, bg="#4CAF50", fg="white", activebackground="#45a049", relief=tk.FLAT, padx=10)
-        self.connect_btn.pack(side=tk.LEFT, padx=5)
-        
-        self.disconnect_btn = tk.Button(top, text="Disconnect", command=self._disconnect, bg="#f44336", fg="white", activebackground="#da190b", relief=tk.FLAT, padx=10)
+
+        # Connect/Disconnect buttons
+        self.connect_btn = self._create_button(top, "Connect", self._connect, style='primary')
+        self.connect_btn.pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+
+        self.disconnect_btn = self._create_button(top, "Disconnect", self._disconnect, style='destructive')
         self.disconnect_btn.pack(side=tk.LEFT)
 
-        # Status label
-        self.status_label = tk.Label(top, text="● Disconnected", fg="#f44336", bg=bg_color, font=("Arial", 9, "bold"))
-        self.status_label.pack(side=tk.RIGHT, padx=10)
+        # Right side - Status indicator (section 5.6)
+        self.status_frame = tk.Frame(top, bg=COLORS['bg_base'])
+        self.status_frame.pack(side=tk.RIGHT)
 
-        # Main content with tabs
-        mid = tk.Frame(self, bg=bg_color)
-        mid.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        
-        style = ttk.Style()
-        style.configure("TNotebook", background=bg_color, borderwidth=0)
-        style.configure("TNotebook.Tab", background="#3C3C3C", foreground=fg_color, padding=[10, 5])
-        style.map("TNotebook.Tab", background=[("selected", "#4CAF50")], foreground=[("selected", "white")])
-        
+        self.status_dot = tk.Canvas(self.status_frame, width=8, height=8, bg=COLORS['bg_base'],
+                                     highlightthickness=0)
+        self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['danger'], outline='')
+        self.status_dot.pack(side=tk.LEFT, padx=(0, SPACE['1']))
+
+        self.status_label = tk.Label(self.status_frame, text="Disconnected",
+                                     bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
+                                     font=('SF Pro Display', 10, 'medium'))
+        self.status_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
+
+        # Main content area
+        mid = tk.Frame(self, bg=COLORS['bg_base'])
+        mid.pack(fill=tk.BOTH, expand=True, padx=SPACE['4'], pady=SPACE['3'])
+
         self.tabs = ttk.Notebook(mid)
         self.tabs.pack(fill=tk.BOTH, expand=True)
 
         # Console tab
-        console_frame = tk.Frame(self.tabs, bg=bg_color)
-        self.console_tab = tk.Text(console_frame, wrap=tk.WORD, state="disabled", bg="#1E1E1E", fg="#D4D4D4", insertbackground="#D4D4D4", relief=tk.FLAT, bd=0)
-        self.console_tab.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        console_frame = tk.Frame(self.tabs, bg=COLORS['bg_elevated'])
+        console_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
+
+        self.console_tab = tk.Text(console_frame, wrap=tk.WORD, state="disabled",
+                                    bg=COLORS['bg_base'], fg=COLORS['text_primary'],
+                                    insertbackground=COLORS['text_primary'],
+                                    relief='flat', bd=0,
+                                    font=('SF Mono', 11),
+                                    padx=SPACE['3'], pady=SPACE['3'])
+        self.console_tab.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
         self.tabs.add(console_frame, text="Console")
 
         # Players tab
-        player_tab = tk.Frame(self.tabs, bg=bg_color)
+        player_tab = tk.Frame(self.tabs, bg=COLORS['bg_elevated'])
         player_tab.pack(fill=tk.BOTH, expand=True)
 
-        # Player search
-        search_frame = tk.Frame(player_tab, bg=bg_color)
-        search_frame.pack(fill=tk.X, padx=5, pady=5)
-        tk.Label(search_frame, text="Search:", bg=bg_color, fg=fg_color).pack(side=tk.LEFT)
+        # Search bar
+        search_frame = tk.Frame(player_tab, bg=COLORS['bg_elevated'])
+        search_frame.pack(fill=tk.X, padx=SPACE['4'], pady=SPACE['3'])
+
+        tk.Label(search_frame, text="Search", bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
+                 font=('SF Pro Display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", lambda *_: self.players.filter(self.search_var.get()))
-        search_entry = tk.Entry(search_frame, textvariable=self.search_var, bg=entry_bg, fg=fg_color, insertbackground=fg_color, relief=tk.SOLID, bd=1)
-        search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        search_entry = self._create_entry(search_frame, textvariable=self.search_var)
+        search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
 
-        # Player action buttons with colors
-        action_frame = tk.Frame(player_tab, bg=bg_color)
-        action_frame.pack(fill=tk.X, padx=5, pady=2)
-        
-        btn_config = {"relief": tk.FLAT, "padx": 8, "pady": 3, "font": ("Arial", 9)}
-        tk.Button(action_frame, text="Kick", command=self._kick_selected, bg="#FF9800", fg="white", activebackground="#e68900", **btn_config).pack(side=tk.LEFT, padx=2)
-        tk.Button(action_frame, text="Ban", command=self._ban_selected, bg="#f44336", fg="white", activebackground="#da190b", **btn_config).pack(side=tk.LEFT, padx=2)
-        tk.Button(action_frame, text="Mute", command=self._mute_selected, bg="#9C27B0", fg="white", activebackground="#7b1fa2", **btn_config).pack(side=tk.LEFT, padx=2)
-        tk.Button(action_frame, text="Teleport", command=self._teleport_to_selected, bg="#2196F3", fg="white", activebackground="#0b7dda", **btn_config).pack(side=tk.LEFT, padx=2)
-        tk.Button(action_frame, text="Give Item", command=self._give_item_dialog, bg="#4CAF50", fg="white", activebackground="#45a049", **btn_config).pack(side=tk.LEFT, padx=2)
-        tk.Button(action_frame, text="Kill", command=self._kill_selected, bg="#607D8B", fg="white", activebackground="#455a64", **btn_config).pack(side=tk.LEFT, padx=2)
+        # Action buttons - Grouped by function (section 4.2, 5.1)
+        action_frame = tk.Frame(player_tab, bg=COLORS['bg_elevated'])
+        action_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['2']))
 
-        # Player treeview with styling
-        tree_frame = tk.Frame(player_tab, bg=bg_color)
-        tree_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        style.configure("Treeview", background="#2B2B2B", foreground=fg_color, fieldbackground="#2B2B2B", rowheight=25)
-        style.configure("Treeview.Heading", background="#3C3C3C", foreground=fg_color, font=("Arial", 10, "bold"))
-        style.map("Treeview", background=[("selected", "#4CAF50")])
-        
-        self.tree = ttk.Treeview(tree_frame, columns=("Name", "Ping", "SteamID", "Connected"), show="headings", selectmode="browse")
+        # Neutral actions group
+        neutral_frame = tk.Frame(action_frame, bg=COLORS['bg_elevated'])
+        neutral_frame.pack(side=tk.LEFT)
+        self._create_button(neutral_frame, "Teleport", self._teleport_to_selected, style='secondary').pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        self._create_button(neutral_frame, "Give Item", self._give_item_dialog, style='secondary').pack(side=tk.LEFT)
+
+        # Destructive actions group - visually separated
+        destructive_frame = tk.Frame(action_frame, bg=COLORS['bg_elevated'])
+        destructive_frame.pack(side=tk.LEFT, padx=(SPACE['6'], 0))
+        self._create_button(destructive_frame, "Kick", self._kick_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        self._create_button(destructive_frame, "Ban", self._ban_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        self._create_button(destructive_frame, "Mute", self._mute_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        self._create_button(destructive_frame, "Kill", self._kill_selected, style='destructive').pack(side=tk.LEFT)
+
+        # Player treeview
+        tree_frame = tk.Frame(player_tab, bg=COLORS['bg_elevated'])
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['4'], pady=(0, SPACE['3']))
+
+        self.tree = ttk.Treeview(tree_frame, columns=("Name", "Ping", "SteamID", "Connected"),
+                                   show="headings", selectmode="browse")
         for col in self.tree["columns"]:
             self.tree.heading(col, text=col, command=lambda c=col: self.players.sort(c, False))
-            self.tree.column(col, anchor="center", width=100)
-        self.tree.column("Name", width=200, anchor="w")
-        
-        # Scrollbar for treeview
+            anchor = 'e' if col in ("Ping",) else ('center' if col in ("Connected",) else 'w')
+            width = 200 if col == "Name" else (100 if col == "SteamID" else 80)
+            self.tree.column(col, anchor=anchor, width=width)
+
         tree_scroll = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=tree_scroll.set)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        
+
         self.tabs.add(player_tab, text="Players")
 
         # Ban list tab
-        ban_frame = tk.Frame(self.tabs, bg=bg_color)
-        self.ban_tab = tk.Text(ban_frame, wrap=tk.WORD, state="disabled", bg="#1E1E1E", fg="#D4D4D4", relief=tk.FLAT, bd=0)
-        self.ban_tab.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        ban_frame = tk.Frame(self.tabs, bg=COLORS['bg_elevated'])
+        ban_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
+
+        self.ban_tab = tk.Text(ban_frame, wrap=tk.WORD, state="disabled",
+                                bg=COLORS['bg_base'], fg=COLORS['text_primary'],
+                                insertbackground=COLORS['text_primary'],
+                                relief='flat', bd=0,
+                                font=('SF Mono', 11),
+                                padx=SPACE['3'], pady=SPACE['3'])
+        self.ban_tab.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
         self.tabs.add(ban_frame, text="Bans")
 
         self.players = PlayerManager(self.tree, self)
 
-        # Right-click context menu for players
-        self.player_menu = Menu(self, tearoff=0, bg=bg_color, fg=fg_color, activebackground="#404040", activeforeground=fg_color)
+        # Right-click context menu
+        self.player_menu = Menu(self, tearoff=0, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
+                                 activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'])
+        self.player_menu.add_command(label="Teleport to Player", command=self._teleport_to_selected)
+        self.player_menu.add_command(label="Give Item...", command=self._give_item_dialog)
+        self.player_menu.add_separator()
         self.player_menu.add_command(label="Kick", command=self._kick_selected)
         self.player_menu.add_command(label="Ban", command=self._ban_selected)
         self.player_menu.add_command(label="Mute", command=self._mute_selected)
-        self.player_menu.add_command(label="Teleport to Player", command=self._teleport_to_selected)
-        self.player_menu.add_command(label="Give Item...", command=self._give_item_dialog)
         self.player_menu.add_separator()
         self.player_menu.add_command(label="Kill Player", command=self._kill_selected)
         self.tree.bind("<Button-3>", self._show_player_menu)
 
-        # Command entry with better styling
-        bot = tk.Frame(self, bg=bg_color)
-        bot.pack(fill=tk.X, padx=10, pady=(5, 0))
-        tk.Label(bot, text="Command:", bg=bg_color, fg=fg_color).pack(side=tk.LEFT)
-        self.command_entry = tk.Entry(bot, bg=entry_bg, fg=fg_color, insertbackground=fg_color, relief=tk.SOLID, bd=1)
-        self.command_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        # Command bar
+        bot = tk.Frame(self, bg=COLORS['bg_base'])
+        bot.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
+
+        tk.Label(bot, text="Command", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
+                 font=('SF Pro Display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+
+        self.command_entry = self._create_entry(bot)
+        self.command_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
         self.command_entry.bind("<Return>", self._send_command)
-        tk.Button(bot, text="Send", command=self._send_command, bg="#2196F3", fg="white", activebackground="#0b7dda", relief=tk.FLAT, padx=15).pack(side=tk.LEFT)
+
+        send_btn = self._create_button(bot, "Send", self._send_command, style='primary')
+        send_btn.pack(side=tk.LEFT, padx=(SPACE['2'], 0))
 
         # Quick commands
-        quick_frame = tk.Frame(self, bg=bg_color)
-        quick_frame.pack(fill=tk.X, padx=10, pady=5)
-        tk.Label(quick_frame, text="Quick:", bg=bg_color, fg=fg_color, font=("Arial", 9)).pack(side=tk.LEFT)
+        quick_frame = tk.Frame(self, bg=COLORS['bg_base'])
+        quick_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
+
+        tk.Label(quick_frame, text="Quick", bg=COLORS['bg_base'], fg=COLORS['text_tertiary'],
+                 font=('SF Pro Display', 9, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+
         for cmd in ["status", "players", "banlistex", "serverinfo"]:
-            tk.Button(quick_frame, text=cmd, command=lambda c=cmd: self._quick_command(c), bg="#3C3C3C", fg=fg_color, activebackground="#555555", relief=tk.FLAT, padx=8, pady=2, font=("Arial", 8)).pack(side=tk.LEFT, padx=2)
+            btn = self._create_button(quick_frame, cmd, lambda c=cmd: self._quick_command(c), style='ghost')
+            btn.configure(font=('SF Mono', 9), padx=SPACE['3'], pady=SPACE['1'])
+            btn.pack(side=tk.LEFT, padx=SPACE['1'])
 
         # Status bar
-        self.status_bar = tk.Label(self, text="Ready", bg="#1E1E1E", fg="#808080", anchor=tk.W, font=("Arial", 8), padx=10)
+        self.status_bar = tk.Label(self, text="Ready", bg=COLORS['bg_elevated'], fg=COLORS['text_tertiary'],
+                                    anchor=tk.W, font=('SF Pro Display', 9), padx=SPACE['4'], pady=SPACE['1'])
         self.status_bar.pack(fill=tk.X, side=tk.BOTTOM)
 
         self.logger = Logger(self.console_tab, self.LOG_PATH, self.TAG_COLORS, self.TAG_WHITELIST)
@@ -437,10 +636,12 @@ class WebRCONApp(tk.Tk):
 
     def _update_connection_status(self, connected):
         if connected:
-            self.status_label.configure(text="● Connected", fg="#4CAF50")
+            self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['success'], outline='')
+            self.status_label.configure(text="Connected", fg=COLORS['success'])
             self._update_status_bar(f"Connected to {self.ip_entry.get()}:{self.port_entry.get()}")
         else:
-            self.status_label.configure(text="● Disconnected", fg="#f44336")
+            self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['danger'], outline='')
+            self.status_label.configure(text="Disconnected", fg=COLORS['text_secondary'])
             self._update_status_bar("Disconnected")
 
     def _show_player_menu(self, event):
@@ -458,7 +659,7 @@ class WebRCONApp(tk.Tk):
         player = self.players.get_selected()
         if player:
             name = player[0]
-            if messagebox.askyesno("Kick Player", f"Kick {name}?"):
+            if messagebox.askyesno("Kick Player", f"Are you sure you want to kick {name}?"):
                 asyncio.run_coroutine_threadsafe(self._send_json_command(f'kick "{name}"'), self.loop)
                 self.logger.log(f'[Command] kick "{name}"')
 
@@ -466,7 +667,7 @@ class WebRCONApp(tk.Tk):
         player = self.players.get_selected()
         if player:
             name = player[0]
-            if messagebox.askyesno("Ban Player", f"Ban {name}?"):
+            if messagebox.askyesno("Ban Player", f"Are you sure you want to ban {name}?"):
                 asyncio.run_coroutine_threadsafe(self._send_json_command(f'banid "{name}"'), self.loop)
                 self.logger.log(f'[Command] banid "{name}"')
 
@@ -488,7 +689,7 @@ class WebRCONApp(tk.Tk):
         player = self.players.get_selected()
         if player:
             name = player[0]
-            if messagebox.askyesno("Kill Player", f"Kill {name}?"):
+            if messagebox.askyesno("Kill Player", f"Are you sure you want to kill {name}?"):
                 asyncio.run_coroutine_threadsafe(self._send_json_command(f'killplayer "{name}"'), self.loop)
                 self.logger.log(f'[Command] killplayer "{name}"')
 
@@ -500,24 +701,34 @@ class WebRCONApp(tk.Tk):
 
         dialog = tk.Toplevel(self)
         dialog.title("Give Item")
-        dialog.geometry("450x350")
+        dialog.geometry("500x400")
         dialog.transient(self)
         dialog.grab_set()
-        dialog.configure(bg="#2B2B2B")
+        dialog.configure(bg=COLORS['bg_elevated'])
+        dialog.resizable(True, True)
 
-        tk.Label(dialog, text=f"Give item to {player[0]}", bg="#2B2B2B", fg="#E0E0E0").pack(pady=10)
+        tk.Label(dialog, text=f"Give item to {player[0]}",
+                 bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
+                 font=('SF Pro Display', 14, 'medium')).pack(pady=SPACE['4'])
 
-        tk.Label(dialog, text="Search Item:", bg="#2B2B2B", fg="#E0E0E0").pack()
+        tk.Label(dialog, text="Search Item",
+                 bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
+                 font=('SF Pro Display', 10, 'medium')).pack(anchor=tk.W, padx=SPACE['6'], pady=(0, SPACE['2']))
+
         search_var = tk.StringVar()
-        search_entry = tk.Entry(dialog, textvariable=search_var, bg="#3C3C3C", fg="#E0E0E0", insertbackground="#E0E0E0", relief=tk.SOLID, bd=1)
-        search_entry.pack(fill=tk.X, padx=20, pady=5)
+        search_entry = self._create_entry(dialog, textvariable=search_var)
+        search_entry.pack(fill=tk.X, padx=SPACE['6'], pady=(0, SPACE['3']))
 
-        listbox_frame = tk.Frame(dialog, bg="#2B2B2B")
-        listbox_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=5)
-        
-        listbox = tk.Listbox(listbox_frame, bg="#3C3C3C", fg="#E0E0E0", selectbackground="#4CAF50", relief=tk.FLAT, bd=0)
-        listbox.pack(fill=tk.BOTH, expand=True)
-        
+        listbox_frame = tk.Frame(dialog, bg=COLORS['bg_elevated'])
+        listbox_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['6'], pady=SPACE['3'])
+
+        listbox = tk.Listbox(listbox_frame, bg=COLORS['bg_surface'], fg=COLORS['text_primary'],
+                              selectbackground=COLORS['accent_subtle'][:7] + '33',
+                              selectforeground=COLORS['text_primary'],
+                              relief='flat', bd=0,
+                              font=('SF Pro Display', 11))
+        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
         scrollbar = ttk.Scrollbar(listbox_frame, orient=tk.VERTICAL, command=listbox.yview)
         listbox.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -544,12 +755,13 @@ class WebRCONApp(tk.Tk):
                 self.logger.log(f'[Command] inv.giveplayer "{player[0]}" {shortname} 1')
                 dialog.destroy()
 
-        tk.Button(dialog, text="Give", command=give_item, bg="#4CAF50", fg="white", activebackground="#45a049", relief=tk.FLAT, padx=20, pady=5).pack(pady=10)
+        give_btn = self._create_button(dialog, "Give Item", give_item, style='primary')
+        give_btn.pack(pady=SPACE['4'])
 
     def _show_banlist(self):
         if self.connected:
             asyncio.run_coroutine_threadsafe(self._send_json_command("global.banlistex"), self.loop)
-            self.tabs.select(self.ban_tab)
+            self.tabs.select(2)
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -771,6 +983,7 @@ class WebRCONApp(tk.Tk):
             return
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.destroy()
+
 
 if __name__ == "__main__":
     app = WebRCONApp()
