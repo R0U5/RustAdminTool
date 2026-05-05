@@ -340,7 +340,7 @@ class WebRCONApp(tk.Tk):
         if style == 'primary':
             config['bg'] = COLORS['accent']
             config['fg'] = COLORS['bg_base']
-            config['font'] = ('SF Pro Display', 12, 'medium')
+            config['font'] = ('SF Pro Display', 12, 'normal')
         elif style == 'destructive':
             config['bg'] = COLORS['danger_subtle']
             config['fg'] = COLORS['danger']
@@ -408,7 +408,7 @@ class WebRCONApp(tk.Tk):
                        background=COLORS['bg_elevated'],
                        foreground=COLORS['text_secondary'],
                        padding=(SPACE['4'], SPACE['2']),
-                       font=_font('display', 11, 'medium'),
+                       font=_font('display', 11, 'normal'),
                        borderwidth=0)
         style.map('TNotebook.Tab',
                  background=[('selected', COLORS['bg_elevated'])],
@@ -423,7 +423,7 @@ class WebRCONApp(tk.Tk):
         style.configure('Treeview.Heading',
                        background=COLORS['bg_elevated'],
                        foreground=COLORS['text_secondary'],
-                       font=_font('display', 10, 'medium'),
+                       font=_font('display', 10, 'normal'),
                        borderwidth=0,
                        padding=(SPACE['3'], SPACE['2']))
         style.map('Treeview.Heading',
@@ -498,7 +498,7 @@ class WebRCONApp(tk.Tk):
 
         self.status_label = tk.Label(self.status_frame, text="Disconnected",
                                      bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                                     font=_font('display', 10, 'medium'))
+                                     font=_font('display', 10, 'normal'))
         self.status_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
 
         # Main content area
@@ -529,7 +529,7 @@ class WebRCONApp(tk.Tk):
         search_frame.pack(fill=tk.X, padx=SPACE['4'], pady=SPACE['3'])
 
         tk.Label(search_frame, text="Search", bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                 font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", lambda *_: self.players.filter(self.search_var.get()))
@@ -605,7 +605,7 @@ class WebRCONApp(tk.Tk):
         bot.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
         tk.Label(bot, text="Command", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                 font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         self.command_entry = self._create_entry(bot)
         self.command_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
@@ -619,7 +619,7 @@ class WebRCONApp(tk.Tk):
         quick_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
         tk.Label(quick_frame, text="Quick", bg=COLORS['bg_base'], fg=COLORS['text_tertiary'],
-                 font=_font('display', 9, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                 font=_font('display', 9, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         for cmd in ["status", "players", "banlistex", "serverinfo"]:
             btn = self._create_button(quick_frame, cmd, lambda c=cmd: self._quick_command(c), style='ghost')
@@ -714,11 +714,11 @@ class WebRCONApp(tk.Tk):
 
         tk.Label(dialog, text=f"Give item to {player[0]}",
                  bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
-                 font=_font('display', 14, 'medium')).pack(pady=SPACE['4'])
+                 font=_font('display', 14, 'normal')).pack(pady=SPACE['4'])
 
         tk.Label(dialog, text="Search Item",
                  bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10, 'medium')).pack(anchor=tk.W, padx=SPACE['6'], pady=(0, SPACE['2']))
+                 font=_font('display', 10, 'normal')).pack(anchor=tk.W, padx=SPACE['6'], pady=(0, SPACE['2']))
 
         search_var = tk.StringVar()
         search_entry = self._create_entry(dialog, textvariable=search_var)
