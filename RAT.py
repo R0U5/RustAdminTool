@@ -19,7 +19,7 @@ PLAYER_REGEX = re.compile(
 )
 TAG_REGEX = re.compile(r"\[[^\]]+\]")
 
-# Color palette - Dark theme (section 2.2)
+# Color palette - Dark theme (section 2.2) - Valid 7-char hex for tkinter
 COLORS = {
     'bg_base': '#0A0A0F',
     'bg_elevated': '#12121A',
@@ -34,16 +34,27 @@ COLORS = {
     'text_tertiary': '#55556A',
     'accent': '#4A6CF7',
     'accent_hover': '#5B7BFF',
-    'accent_subtle': '#4A6CF712',
+    'accent_light': '#E8EDFD',  # Light version for subtle backgrounds
     'success': '#34D399',
-    'success_subtle': '#34D39912',
+    'success_subtle': '#E8FDF5',
     'warning': '#FBBF24',
-    'warning_subtle': '#FBBF2412',
+    'warning_subtle': '#FEF9C3',
     'danger': '#F87171',
-    'danger_subtle': '#F8717112',
+    'danger_subtle': '#FEE2E2',
     'info': '#60A5FA',
-    'info_subtle': '#60A5FA12',
+    'info_subtle': '#DBEAFE',
 }
+
+# Font configuration with fallbacks (section 3.1)
+FONTS = {
+    'display': ('Segoe UI', 'SF Pro Display', 'DM Sans', 'Verdana', 'sans-serif'),
+    'mono': ('Consolas', 'SF Mono', 'Courier New', 'monospace'),
+}
+
+def _font(family, size, weight='normal'):
+    """Create font tuple with fallback"""
+    base = FONTS[family]
+    return (base[0], size, weight)  # tkinter uses first available from system
 
 # Spacing scale (section 4.1)
 SPACE = {
@@ -382,8 +393,6 @@ class WebRCONApp(tk.Tk):
             'highlightbackground': COLORS['border_default'],
             'highlightcolor': COLORS['border_focus'],
             'font': ('SF Pro Display', 12),
-            'padx': SPACE['3'],
-            'pady': SPACE['2'],
         }
         config.update(kwargs)
         return tk.Entry(parent, **config)
@@ -401,7 +410,7 @@ class WebRCONApp(tk.Tk):
                        background=COLORS['bg_elevated'],
                        foreground=COLORS['text_secondary'],
                        padding=(SPACE['4'], SPACE['2']),
-                       font=('SF Pro Display', 11, 'medium'),
+                       font=_font('display', 11, 'medium'),
                        borderwidth=0)
         style.map('TNotebook.Tab',
                  background=[('selected', COLORS['bg_elevated'])],
@@ -411,18 +420,18 @@ class WebRCONApp(tk.Tk):
                        foreground=COLORS['text_primary'],
                        fieldbackground=COLORS['bg_surface'],
                        rowheight=40,
-                       font=('SF Mono', 11),
+                       font=_font('mono', 11),
                        borderwidth=0)
         style.configure('Treeview.Heading',
                        background=COLORS['bg_elevated'],
                        foreground=COLORS['text_secondary'],
-                       font=('SF Pro Display', 10, 'medium'),
+                       font=_font('display', 10, 'medium'),
                        borderwidth=0,
                        padding=(SPACE['3'], SPACE['2']))
         style.map('Treeview.Heading',
                  background=[('active', COLORS['bg_hover'])])
         style.map('Treeview',
-                  background=[('selected', COLORS['accent_subtle'][:7] + '33')])
+                  background=[('selected', COLORS['accent_light'])])
 
         # Menu bar
         menubar = tk.Menu(self, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
@@ -451,27 +460,27 @@ class WebRCONApp(tk.Tk):
 
         # Left side - Logo/Title
         title_label = tk.Label(top, text="R.A.T.", bg=COLORS['bg_base'], fg=COLORS['accent'],
-                               font=('SF Pro Display', 14, 'bold'))
+                               font=_font('display', 14, 'bold'))
         title_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
 
         # Connection inputs
         tk.Label(top, text="IP", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=('SF Pro Display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], 2))
+                 font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], 2))
         self.ip_entry = self._create_entry(top, width=15)
         self.ip_entry.insert(0, ip)
-        self.ip_entry.pack(side=tk.LEFT, padx=2)
+        self.ip_entry.pack(side=tk.LEFT, padx=(0, 2), pady=SPACE['2'])
 
         tk.Label(top, text="Port", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=('SF Pro Display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+                 font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
         self.port_entry = self._create_entry(top, width=6)
         self.port_entry.insert(0, str(port))
-        self.port_entry.pack(side=tk.LEFT, padx=2)
+        self.port_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
 
         tk.Label(top, text="Password", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=('SF Pro Display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+                 font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
         self.password_entry = self._create_entry(top, show="*", width=12)
         self.password_entry.insert(0, password)
-        self.password_entry.pack(side=tk.LEFT, padx=2)
+        self.password_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
 
         # Connect/Disconnect buttons
         self.connect_btn = self._create_button(top, "Connect", self._connect, style='primary')
@@ -491,7 +500,7 @@ class WebRCONApp(tk.Tk):
 
         self.status_label = tk.Label(self.status_frame, text="Disconnected",
                                      bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                                     font=('SF Pro Display', 10, 'medium'))
+                                     font=_font('display', 10, 'medium'))
         self.status_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
 
         # Main content area
@@ -509,8 +518,7 @@ class WebRCONApp(tk.Tk):
                                     bg=COLORS['bg_base'], fg=COLORS['text_primary'],
                                     insertbackground=COLORS['text_primary'],
                                     relief='flat', bd=0,
-                                    font=('SF Mono', 11),
-                                    padx=SPACE['3'], pady=SPACE['3'])
+                                    font=_font('mono', 11))
         self.console_tab.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
         self.tabs.add(console_frame, text="Console")
 
@@ -523,7 +531,7 @@ class WebRCONApp(tk.Tk):
         search_frame.pack(fill=tk.X, padx=SPACE['4'], pady=SPACE['3'])
 
         tk.Label(search_frame, text="Search", bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
-                 font=('SF Pro Display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                 font=_font('display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", lambda *_: self.players.filter(self.search_var.get()))
@@ -575,8 +583,7 @@ class WebRCONApp(tk.Tk):
                                 bg=COLORS['bg_base'], fg=COLORS['text_primary'],
                                 insertbackground=COLORS['text_primary'],
                                 relief='flat', bd=0,
-                                font=('SF Mono', 11),
-                                padx=SPACE['3'], pady=SPACE['3'])
+                                font=_font('mono', 11))
         self.ban_tab.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
         self.tabs.add(ban_frame, text="Bans")
 
@@ -600,7 +607,7 @@ class WebRCONApp(tk.Tk):
         bot.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
         tk.Label(bot, text="Command", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=('SF Pro Display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                 font=_font('display', 10, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         self.command_entry = self._create_entry(bot)
         self.command_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
@@ -614,16 +621,16 @@ class WebRCONApp(tk.Tk):
         quick_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
         tk.Label(quick_frame, text="Quick", bg=COLORS['bg_base'], fg=COLORS['text_tertiary'],
-                 font=('SF Pro Display', 9, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                 font=_font('display', 9, 'medium')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         for cmd in ["status", "players", "banlistex", "serverinfo"]:
             btn = self._create_button(quick_frame, cmd, lambda c=cmd: self._quick_command(c), style='ghost')
-            btn.configure(font=('SF Mono', 9), padx=SPACE['3'], pady=SPACE['1'])
-            btn.pack(side=tk.LEFT, padx=SPACE['1'])
+            btn.configure(font=_font('mono', 9))
+            btn.pack(side=tk.LEFT, padx=SPACE['1'], pady=SPACE['1'])
 
         # Status bar
         self.status_bar = tk.Label(self, text="Ready", bg=COLORS['bg_elevated'], fg=COLORS['text_tertiary'],
-                                    anchor=tk.W, font=('SF Pro Display', 9), padx=SPACE['4'], pady=SPACE['1'])
+                                    anchor=tk.W, font=_font('display', 9), padx=SPACE['4'], pady=SPACE['1'])
         self.status_bar.pack(fill=tk.X, side=tk.BOTTOM)
 
         self.logger = Logger(self.console_tab, self.LOG_PATH, self.TAG_COLORS, self.TAG_WHITELIST)
@@ -709,11 +716,11 @@ class WebRCONApp(tk.Tk):
 
         tk.Label(dialog, text=f"Give item to {player[0]}",
                  bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
-                 font=('SF Pro Display', 14, 'medium')).pack(pady=SPACE['4'])
+                 font=_font('display', 14, 'medium')).pack(pady=SPACE['4'])
 
         tk.Label(dialog, text="Search Item",
                  bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
-                 font=('SF Pro Display', 10, 'medium')).pack(anchor=tk.W, padx=SPACE['6'], pady=(0, SPACE['2']))
+                 font=_font('display', 10, 'medium')).pack(anchor=tk.W, padx=SPACE['6'], pady=(0, SPACE['2']))
 
         search_var = tk.StringVar()
         search_entry = self._create_entry(dialog, textvariable=search_var)
@@ -726,7 +733,7 @@ class WebRCONApp(tk.Tk):
                               selectbackground=COLORS['accent_subtle'][:7] + '33',
                               selectforeground=COLORS['text_primary'],
                               relief='flat', bd=0,
-                              font=('SF Pro Display', 11))
+                              font=_font('display', 11))
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         scrollbar = ttk.Scrollbar(listbox_frame, orient=tk.VERTICAL, command=listbox.yview)
