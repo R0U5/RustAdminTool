@@ -211,12 +211,11 @@ class PlayerManager:
         self.tree = treeview
         self.app = app
         self._cached_players = {}
+        self._sort_reverse = {}
 
     def update(self, message):
         lines = message.splitlines()
-        self.tree.delete(*self.tree.get_children())
-        self._cached_players.clear()
-
+        players_data = []
         for line in lines:
             match = PLAYER_REGEX.match(line.strip())
             if match:
@@ -225,10 +224,17 @@ class PlayerManager:
                     ping = match.group("ping")
                     steamid = match.group("steamId")
                     connected = match.group("connected")
-                    item_id = self.tree.insert("", "end", values=(name, ping, steamid, connected))
-                    self._cached_players[steamid] = item_id
+                    players_data.append((name, ping, steamid, connected))
                 except Exception:
                     continue
+        self.app.after(0, self._update_tree, players_data)
+
+    def _update_tree(self, players_data):
+        self.tree.delete(*self.tree.get_children())
+        self._cached_players.clear()
+        for name, ping, steamid, connected in players_data:
+            item_id = self.tree.insert("", "end", values=(name, ping, steamid, connected))
+            self._cached_players[steamid] = item_id
 
     def filter(self, query):
         q = query.lower()
@@ -245,7 +251,9 @@ class PlayerManager:
                 except tk.TclError:
                     pass
 
-    def sort(self, col, reverse):
+    def sort(self, col):
+        reverse = not self._sort_reverse.get(col, False)
+        self._sort_reverse[col] = reverse
         data = []
         for k in self.tree.get_children(''):
             value = self.tree.set(k, col)
@@ -340,14 +348,14 @@ class WebRCONApp(tk.Tk):
         if style == 'primary':
             config['bg'] = COLORS['accent']
             config['fg'] = COLORS['bg_base']
-            config['font'] = ('SF Pro Display', 12, 'normal')
+            config['font'] = _font('display', 12, 'normal')
         elif style == 'destructive':
             config['bg'] = COLORS['danger_subtle']
             config['fg'] = COLORS['danger']
             config['activebackground'] = COLORS['danger']
             config['activeforeground'] = 'white'
         elif style == 'ghost':
-            config['bg'] = 'transparent'
+            config['bg'] = COLORS['bg_base']
             config['fg'] = COLORS['accent']
 
         config.update(kwargs)
@@ -561,7 +569,7 @@ class WebRCONApp(tk.Tk):
         self.tree = ttk.Treeview(tree_frame, columns=("Name", "Ping", "SteamID", "Connected"),
                                    show="headings", selectmode="browse")
         for col in self.tree["columns"]:
-            self.tree.heading(col, text=col, command=lambda c=col: self.players.sort(c, False))
+            self.tree.heading(col, text=col, command=lambda c=col: self.players.sort(c))
             anchor = 'e' if col in ("Ping",) else ('center' if col in ("Connected",) else 'w')
             width = 200 if col == "Name" else (100 if col == "SteamID" else 80)
             self.tree.column(col, anchor=anchor, width=width)
@@ -640,11 +648,16 @@ class WebRCONApp(tk.Tk):
         self.status_bar.configure(text=message)
 
     def _update_connection_status(self, connected):
+        self.after(0, self._do_update_connection_status, connected)
+
+    def _do_update_connection_status(self, connected):
         if connected:
+            self.status_dot.delete("all")
             self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['success'], outline='')
             self.status_label.configure(text="Connected", fg=COLORS['success'])
             self._update_status_bar(f"Connected to {self.ip_entry.get()}:{self.port_entry.get()}")
         else:
+            self.status_dot.delete("all")
             self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['danger'], outline='')
             self.status_label.configure(text="Disconnected", fg=COLORS['text_secondary'])
             self._update_status_bar("Disconnected")
@@ -728,10 +741,10 @@ class WebRCONApp(tk.Tk):
         listbox_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['6'], pady=SPACE['3'])
 
         listbox = tk.Listbox(listbox_frame, bg=COLORS['bg_surface'], fg=COLORS['text_primary'],
-                              selectbackground=COLORS['accent_subtle'][:7] + '33',
-                              selectforeground=COLORS['text_primary'],
-                              relief='flat', bd=0,
-                              font=_font('display', 11))
+                               selectbackground=COLORS['accent_light'],
+                               selectforeground=COLORS['text_primary'],
+                               relief='flat', bd=0,
+                               font=_font('display', 11))
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         scrollbar = ttk.Scrollbar(listbox_frame, orient=tk.VERTICAL, command=listbox.yview)
@@ -953,6 +966,9 @@ class WebRCONApp(tk.Tk):
             self.logger.log(f"[ERROR] Failed to parse message: {e}")
 
     def _update_ban_tab(self, message):
+        self.after(0, self._do_update_ban_tab, message)
+
+    def _do_update_ban_tab(self, message):
         self.ban_tab.configure(state="normal")
         self.ban_tab.insert(tk.END, message + "\n")
         self.ban_tab.see(tk.END)
