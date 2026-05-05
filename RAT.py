@@ -4,6 +4,7 @@ import asyncio
 import datetime
 import threading
 try:
+    import tkinter as tk
     import customtkinter as ctk
     from tkinter import messagebox, ttk, Menu
     import websockets
@@ -448,25 +449,25 @@ class WebRCONApp(ctk.CTk):
 
         # Left side - Logo/Title
         title_label = ctk.CTkLabel(top, text="R.A.T.", text_color=COLORS['accent'],
-                                    font=_font('display', 14, 'bold'))
-        title_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
+                                     font=_font('display', 14, 'bold'))
+        title_label.pack(side=tk.LEFT, padx=(SPACE['2'], SPACE['4']))
 
         # Connection inputs
         ctk.CTkLabel(top, text="IP", text_color=COLORS['text_secondary'],
                        font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], 2))
-        self.ip_entry = self._create_entry(top, width=15)
+        self.ip_entry = self._create_entry(top, width=150)
         self.ip_entry.insert(0, ip)
         self.ip_entry.pack(side=tk.LEFT, padx=(0, 2), pady=SPACE['2'])
 
         ctk.CTkLabel(top, text="Port", text_color=COLORS['text_secondary'],
                        font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
-        self.port_entry = self._create_entry(top, width=6)
+        self.port_entry = self._create_entry(top, width=60)
         self.port_entry.insert(0, str(port))
         self.port_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
 
         ctk.CTkLabel(top, text="Password", text_color=COLORS['text_secondary'],
                        font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
-        self.password_entry = self._create_entry(top, show="*", width=12)
+        self.password_entry = self._create_entry(top, show="*", width=300)
         self.password_entry.insert(0, password)
         self.password_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
 
@@ -533,16 +534,28 @@ class WebRCONApp(ctk.CTk):
         # Neutral actions group
         neutral_frame = ctk.CTkFrame(action_frame, fg_color=COLORS['bg_elevated'])
         neutral_frame.pack(side=tk.LEFT)
-        self._create_button(neutral_frame, "Teleport", self._teleport_to_selected, style='secondary').pack(side=tk.LEFT, padx=(0, SPACE['2']))
-        self._create_button(neutral_frame, "Give Item", self._give_item_dialog, style='secondary').pack(side=tk.LEFT)
+        btn = self._create_button(neutral_frame, "Teleport", self._teleport_to_selected, style='secondary')
+        btn.configure(border_width=1, border_color=COLORS['border_default'])
+        btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        btn = self._create_button(neutral_frame, "Give Item", self._give_item_dialog, style='secondary')
+        btn.configure(border_width=1, border_color=COLORS['border_default'])
+        btn.pack(side=tk.LEFT)
 
         # Destructive actions group - visually separated
         destructive_frame = ctk.CTkFrame(action_frame, fg_color=COLORS['bg_elevated'])
         destructive_frame.pack(side=tk.LEFT, padx=(SPACE['6'], 0))
-        self._create_button(destructive_frame, "Kick", self._kick_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
-        self._create_button(destructive_frame, "Ban", self._ban_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
-        self._create_button(destructive_frame, "Mute", self._mute_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
-        self._create_button(destructive_frame, "Kill", self._kill_selected, style='destructive').pack(side=tk.LEFT)
+        btn = self._create_button(destructive_frame, "Kick", self._kick_selected, style='destructive')
+        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        btn = self._create_button(destructive_frame, "Ban", self._ban_selected, style='destructive')
+        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        btn = self._create_button(destructive_frame, "Mute", self._mute_selected, style='destructive')
+        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        btn = self._create_button(destructive_frame, "Kill", self._kill_selected, style='destructive')
+        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn.pack(side=tk.LEFT)
 
         # Player treeview
         tree_frame = ctk.CTkFrame(player_tab, fg_color=COLORS['bg_elevated'])
@@ -595,7 +608,7 @@ class WebRCONApp(ctk.CTk):
         bot.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
         ctk.CTkLabel(bot, text="Command", text_color=COLORS['text_secondary'],
-                       font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                       font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(SPACE['2'], SPACE['2']))
 
         self.command_entry = self._create_entry(bot)
         self.command_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
@@ -609,10 +622,10 @@ class WebRCONApp(ctk.CTk):
         quick_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
         ctk.CTkLabel(quick_frame, text="Quick", text_color=COLORS['text_tertiary'],
-                       font=_font('display', 9, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+                       font=_font('display', 9, 'normal')).pack(side=tk.LEFT, padx=(SPACE['2'], SPACE['2']))
 
         for cmd in ["status", "players", "banlistex", "serverinfo"]:
-            btn = self._create_button(quick_frame, cmd, lambda c=cmd: self._quick_command(c), style='ghost')
+            btn = self._create_button(quick_frame, cmd, lambda c=cmd: self._quick_command(c), style='secondary')
             btn.configure(font=_font('mono', 9))
             btn.pack(side=tk.LEFT, padx=SPACE['1'], pady=SPACE['1'])
 
