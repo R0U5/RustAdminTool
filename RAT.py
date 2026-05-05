@@ -3,7 +3,7 @@ import json
 import asyncio
 import datetime
 import threading
-import tkinter as tk
+import customtkinter as ctk
 from tkinter import messagebox, ttk, Menu
 import websockets
 import re
@@ -12,6 +12,10 @@ import urllib.parse
 import base64
 import hashlib
 import secrets
+
+# Set CustomTkinter appearance
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
 # Pre-compile regex patterns for performance
 PLAYER_REGEX = re.compile(
@@ -283,7 +287,7 @@ class PlayerManager:
         return None
 
 
-class WebRCONApp(tk.Tk):
+class WebRCONApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Rust Admin Tool")
@@ -337,71 +341,42 @@ class WebRCONApp(tk.Tk):
     def _create_button(self, parent, text, command, style='secondary', **kwargs):
         """Create button with proper hierarchy (section 5.1)"""
         config = {
-            'bg': COLORS['bg_elevated'],
-            'fg': COLORS['text_primary'],
+            'fg_color': COLORS['bg_elevated'],
+            'text_color': COLORS['text_primary'],
             'font': _font('display', 12, 'normal'),
-            'relief': 'flat',
-            'bd': 0,
-            'cursor': 'hand2',
+            'hover_color': COLORS['bg_hover'],
+            'corner_radius': RADIUS['md'],
         }
 
         if style == 'primary':
-            config['bg'] = COLORS['accent']
-            config['fg'] = COLORS['bg_base']
-            config['font'] = _font('display', 12, 'normal')
+            config['fg_color'] = COLORS['accent']
+            config['text_color'] = COLORS['bg_base']
+            config['hover_color'] = COLORS['accent_hover']
         elif style == 'destructive':
-            config['bg'] = COLORS['danger_subtle']
-            config['fg'] = COLORS['danger']
-            config['activebackground'] = COLORS['danger']
-            config['activeforeground'] = 'white'
+            config['fg_color'] = COLORS['danger_subtle']
+            config['text_color'] = COLORS['danger']
+            config['hover_color'] = COLORS['danger']
         elif style == 'ghost':
-            config['bg'] = COLORS['bg_base']
-            config['fg'] = COLORS['accent']
+            config['fg_color'] = 'transparent'
+            config['text_color'] = COLORS['accent']
+            config['hover_color'] = COLORS['bg_hover']
 
         config.update(kwargs)
-        btn = tk.Button(parent, **config)
-        btn.configure(activebackground=COLORS['bg_hover'] if style != 'primary' else COLORS['accent_hover'])
-
-        if command:
-            btn.configure(command=command)
-
-        # Hover effects
-        def on_enter(e):
-            if style == 'primary':
-                btn.configure(bg=COLORS['accent_hover'])
-            elif style == 'destructive':
-                btn.configure(bg=COLORS['danger'])
-            else:
-                btn.configure(bg=COLORS['bg_hover'])
-
-        def on_leave(e):
-            if style == 'primary':
-                btn.configure(bg=COLORS['accent'])
-            elif style == 'destructive':
-                btn.configure(bg=COLORS['danger_subtle'])
-            else:
-                btn.configure(bg=config['bg'])
-
-        btn.bind('<Enter>', on_enter)
-        btn.bind('<Leave>', on_leave)
-
+        btn = ctk.CTkButton(parent, text=text, command=command, **config)
         return btn
 
     def _create_entry(self, parent, **kwargs):
         """Create input with modern styling (section 5.4)"""
         config = {
-            'bg': COLORS['bg_surface'],
-            'fg': COLORS['text_primary'],
-            'insertbackground': COLORS['text_primary'],
-            'relief': 'flat',
-            'bd': 0,
-            'highlightthickness': 1,
-            'highlightbackground': COLORS['border_default'],
-            'highlightcolor': COLORS['border_focus'],
-            'font': ('SF Pro Display', 12),
+            'fg_color': COLORS['bg_surface'],
+            'text_color': COLORS['text_primary'],
+            'font': _font('display', 12),
+            'corner_radius': RADIUS['md'],
+            'border_color': COLORS['border_default'],
+            'border_width': 1,
         }
         config.update(kwargs)
-        return tk.Entry(parent, **config)
+        return ctk.CTkEntry(parent, **config)
 
     def _init_ui(self):
         config = self.config_mgr.load()
@@ -439,12 +414,12 @@ class WebRCONApp(tk.Tk):
         style.map('Treeview',
                   background=[('selected', COLORS['accent_light'])])
 
-        # Menu bar
+        # Menu bar - tk.Menu is kept as CTk doesn't have Menu
         menubar = tk.Menu(self, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
-                          activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'],
-                          bd=0, relief='flat')
+                           activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'],
+                           bd=0, relief='flat')
         server_menu = tk.Menu(menubar, tearoff=0, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
-                              activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'])
+                               activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'])
         server_menu.add_command(label="Connect", command=self._connect)
         server_menu.add_command(label="Disconnect", command=self._disconnect)
         server_menu.add_separator()
@@ -452,7 +427,7 @@ class WebRCONApp(tk.Tk):
         menubar.add_cascade(label="Server", menu=server_menu)
 
         tools_menu = tk.Menu(menubar, tearoff=0, bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
-                              activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'])
+                               activebackground=COLORS['bg_hover'], activeforeground=COLORS['text_primary'])
         tools_menu.add_command(label="Ban List", command=self._show_banlist)
         tools_menu.add_command(label="Player List", command=lambda: asyncio.run_coroutine_threadsafe(self._send_json_command("players"), self.loop))
         menubar.add_cascade(label="Tools", menu=tools_menu)
@@ -460,30 +435,30 @@ class WebRCONApp(tk.Tk):
         self.config(menu=menubar)
 
         # Top bar - Connection frame
-        top = tk.Frame(self, bg=COLORS['bg_base'], height=56)
+        top = ctk.CTkFrame(self, fg_color=COLORS['bg_base'], height=56)
         top.pack(fill=tk.X, padx=SPACE['4'], pady=(SPACE['3'], 0))
         top.pack_propagate(False)
 
         # Left side - Logo/Title
-        title_label = tk.Label(top, text="R.A.T.", bg=COLORS['bg_base'], fg=COLORS['accent'],
-                               font=_font('display', 14, 'bold'))
+        title_label = ctk.CTkLabel(top, text="R.A.T.", text_color=COLORS['accent'],
+                                    font=_font('display', 14, 'bold'))
         title_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
 
         # Connection inputs
-        tk.Label(top, text="IP", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], 2))
+        ctk.CTkLabel(top, text="IP", text_color=COLORS['text_secondary'],
+                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], 2))
         self.ip_entry = self._create_entry(top, width=15)
         self.ip_entry.insert(0, ip)
         self.ip_entry.pack(side=tk.LEFT, padx=(0, 2), pady=SPACE['2'])
 
-        tk.Label(top, text="Port", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+        ctk.CTkLabel(top, text="Port", text_color=COLORS['text_secondary'],
+                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
         self.port_entry = self._create_entry(top, width=6)
         self.port_entry.insert(0, str(port))
         self.port_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
 
-        tk.Label(top, text="Password", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+        ctk.CTkLabel(top, text="Password", text_color=COLORS['text_secondary'],
+                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
         self.password_entry = self._create_entry(top, show="*", width=12)
         self.password_entry.insert(0, password)
         self.password_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
@@ -496,28 +471,28 @@ class WebRCONApp(tk.Tk):
         self.disconnect_btn.pack(side=tk.LEFT)
 
         # Right side - Status indicator (section 5.6)
-        self.status_frame = tk.Frame(top, bg=COLORS['bg_base'])
+        self.status_frame = ctk.CTkFrame(top, fg_color=COLORS['bg_base'])
         self.status_frame.pack(side=tk.RIGHT)
 
         self.status_dot = tk.Canvas(self.status_frame, width=8, height=8, bg=COLORS['bg_base'],
-                                     highlightthickness=0)
+                                      highlightthickness=0)
         self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['danger'], outline='')
         self.status_dot.pack(side=tk.LEFT, padx=(0, SPACE['1']))
 
-        self.status_label = tk.Label(self.status_frame, text="Disconnected",
-                                     bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                                     font=_font('display', 10, 'normal'))
+        self.status_label = ctk.CTkLabel(self.status_frame, text="Disconnected",
+                                          text_color=COLORS['text_secondary'],
+                                          font=_font('display', 10, 'normal'))
         self.status_label.pack(side=tk.LEFT, padx=(0, SPACE['4']))
 
         # Main content area
-        mid = tk.Frame(self, bg=COLORS['bg_base'])
+        mid = ctk.CTkFrame(self, fg_color=COLORS['bg_base'])
         mid.pack(fill=tk.BOTH, expand=True, padx=SPACE['4'], pady=SPACE['3'])
 
         self.tabs = ttk.Notebook(mid)
         self.tabs.pack(fill=tk.BOTH, expand=True)
 
         # Console tab
-        console_frame = tk.Frame(self.tabs, bg=COLORS['bg_elevated'])
+        console_frame = ctk.CTkFrame(self.tabs, fg_color=COLORS['bg_elevated'])
         console_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
 
         self.console_tab = tk.Text(console_frame, wrap=tk.WORD, state="disabled",
@@ -529,15 +504,15 @@ class WebRCONApp(tk.Tk):
         self.tabs.add(console_frame, text="Console")
 
         # Players tab
-        player_tab = tk.Frame(self.tabs, bg=COLORS['bg_elevated'])
+        player_tab = ctk.CTkFrame(self.tabs, fg_color=COLORS['bg_elevated'])
         player_tab.pack(fill=tk.BOTH, expand=True)
 
         # Search bar
-        search_frame = tk.Frame(player_tab, bg=COLORS['bg_elevated'])
+        search_frame = ctk.CTkFrame(player_tab, fg_color=COLORS['bg_elevated'])
         search_frame.pack(fill=tk.X, padx=SPACE['4'], pady=SPACE['3'])
 
-        tk.Label(search_frame, text="Search", bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        ctk.CTkLabel(search_frame, text="Search", text_color=COLORS['text_secondary'],
+                       font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", lambda *_: self.players.filter(self.search_var.get()))
@@ -545,17 +520,17 @@ class WebRCONApp(tk.Tk):
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
 
         # Action buttons - Grouped by function (section 4.2, 5.1)
-        action_frame = tk.Frame(player_tab, bg=COLORS['bg_elevated'])
+        action_frame = ctk.CTkFrame(player_tab, fg_color=COLORS['bg_elevated'])
         action_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['2']))
 
         # Neutral actions group
-        neutral_frame = tk.Frame(action_frame, bg=COLORS['bg_elevated'])
+        neutral_frame = ctk.CTkFrame(action_frame, fg_color=COLORS['bg_elevated'])
         neutral_frame.pack(side=tk.LEFT)
         self._create_button(neutral_frame, "Teleport", self._teleport_to_selected, style='secondary').pack(side=tk.LEFT, padx=(0, SPACE['2']))
         self._create_button(neutral_frame, "Give Item", self._give_item_dialog, style='secondary').pack(side=tk.LEFT)
 
         # Destructive actions group - visually separated
-        destructive_frame = tk.Frame(action_frame, bg=COLORS['bg_elevated'])
+        destructive_frame = ctk.CTkFrame(action_frame, fg_color=COLORS['bg_elevated'])
         destructive_frame.pack(side=tk.LEFT, padx=(SPACE['6'], 0))
         self._create_button(destructive_frame, "Kick", self._kick_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
         self._create_button(destructive_frame, "Ban", self._ban_selected, style='destructive').pack(side=tk.LEFT, padx=(0, SPACE['2']))
@@ -563,7 +538,7 @@ class WebRCONApp(tk.Tk):
         self._create_button(destructive_frame, "Kill", self._kill_selected, style='destructive').pack(side=tk.LEFT)
 
         # Player treeview
-        tree_frame = tk.Frame(player_tab, bg=COLORS['bg_elevated'])
+        tree_frame = ctk.CTkFrame(player_tab, fg_color=COLORS['bg_elevated'])
         tree_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['4'], pady=(0, SPACE['3']))
 
         self.tree = ttk.Treeview(tree_frame, columns=("Name", "Ping", "SteamID", "Connected"),
@@ -582,7 +557,7 @@ class WebRCONApp(tk.Tk):
         self.tabs.add(player_tab, text="Players")
 
         # Ban list tab
-        ban_frame = tk.Frame(self.tabs, bg=COLORS['bg_elevated'])
+        ban_frame = ctk.CTkFrame(self.tabs, fg_color=COLORS['bg_elevated'])
         ban_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['2'], pady=SPACE['2'])
 
         self.ban_tab = tk.Text(ban_frame, wrap=tk.WORD, state="disabled",
@@ -609,11 +584,11 @@ class WebRCONApp(tk.Tk):
         self.tree.bind("<Button-3>", self._show_player_menu)
 
         # Command bar
-        bot = tk.Frame(self, bg=COLORS['bg_base'])
+        bot = ctk.CTkFrame(self, fg_color=COLORS['bg_base'])
         bot.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
-        tk.Label(bot, text="Command", bg=COLORS['bg_base'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        ctk.CTkLabel(bot, text="Command", text_color=COLORS['text_secondary'],
+                       font=_font('display', 10, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         self.command_entry = self._create_entry(bot)
         self.command_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
@@ -623,11 +598,11 @@ class WebRCONApp(tk.Tk):
         send_btn.pack(side=tk.LEFT, padx=(SPACE['2'], 0))
 
         # Quick commands
-        quick_frame = tk.Frame(self, bg=COLORS['bg_base'])
+        quick_frame = ctk.CTkFrame(self, fg_color=COLORS['bg_base'])
         quick_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
-        tk.Label(quick_frame, text="Quick", bg=COLORS['bg_base'], fg=COLORS['text_tertiary'],
-                 font=_font('display', 9, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
+        ctk.CTkLabel(quick_frame, text="Quick", text_color=COLORS['text_tertiary'],
+                       font=_font('display', 9, 'normal')).pack(side=tk.LEFT, padx=(0, SPACE['2']))
 
         for cmd in ["status", "players", "banlistex", "serverinfo"]:
             btn = self._create_button(quick_frame, cmd, lambda c=cmd: self._quick_command(c), style='ghost')
@@ -635,8 +610,8 @@ class WebRCONApp(tk.Tk):
             btn.pack(side=tk.LEFT, padx=SPACE['1'], pady=SPACE['1'])
 
         # Status bar
-        self.status_bar = tk.Label(self, text="Ready", bg=COLORS['bg_elevated'], fg=COLORS['text_tertiary'],
-                                    anchor=tk.W, font=_font('display', 9), padx=SPACE['4'], pady=SPACE['1'])
+        self.status_bar = ctk.CTkLabel(self, text="Ready", text_color=COLORS['text_tertiary'],
+                                        anchor=tk.W, font=_font('display', 9), padx=SPACE['4'], pady=SPACE['1'])
         self.status_bar.pack(fill=tk.X, side=tk.BOTTOM)
 
         self.logger = Logger(self.console_tab, self.LOG_PATH, self.TAG_COLORS, self.TAG_WHITELIST)
@@ -717,27 +692,27 @@ class WebRCONApp(tk.Tk):
             messagebox.showwarning("No Player", "Please select a player first.")
             return
 
-        dialog = tk.Toplevel(self)
+        dialog = ctk.CTkToplevel(self)
         dialog.title("Give Item")
         dialog.geometry("500x400")
         dialog.transient(self)
         dialog.grab_set()
-        dialog.configure(bg=COLORS['bg_elevated'])
+        dialog.configure(fg_color=COLORS['bg_elevated'])
         dialog.resizable(True, True)
 
-        tk.Label(dialog, text=f"Give item to {player[0]}",
-                 bg=COLORS['bg_elevated'], fg=COLORS['text_primary'],
-                 font=_font('display', 14, 'normal')).pack(pady=SPACE['4'])
+        ctk.CTkLabel(dialog, text=f"Give item to {player[0]}",
+                       text_color=COLORS['text_primary'],
+                       font=_font('display', 14, 'normal')).pack(pady=SPACE['4'])
 
-        tk.Label(dialog, text="Search Item",
-                 bg=COLORS['bg_elevated'], fg=COLORS['text_secondary'],
-                 font=_font('display', 10, 'normal')).pack(anchor=tk.W, padx=SPACE['6'], pady=(0, SPACE['2']))
+        ctk.CTkLabel(dialog, text="Search Item",
+                       text_color=COLORS['text_secondary'],
+                       font=_font('display', 10, 'normal')).pack(anchor=tk.W, padx=SPACE['6'], pady=(0, SPACE['2']))
 
         search_var = tk.StringVar()
         search_entry = self._create_entry(dialog, textvariable=search_var)
         search_entry.pack(fill=tk.X, padx=SPACE['6'], pady=(0, SPACE['3']))
 
-        listbox_frame = tk.Frame(dialog, bg=COLORS['bg_elevated'])
+        listbox_frame = ctk.CTkFrame(dialog, fg_color=COLORS['bg_elevated'])
         listbox_frame.pack(fill=tk.BOTH, expand=True, padx=SPACE['6'], pady=SPACE['3'])
 
         listbox = tk.Listbox(listbox_frame, bg=COLORS['bg_surface'], fg=COLORS['text_primary'],
