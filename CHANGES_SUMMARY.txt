@@ -1,0 +1,12 @@
+Changes made to fix RAT.py UI:
+1. Removed _apply_vertical_gradient function and all its calls.
+2. Removed imports of GRADIENT_START and GRADIENT_END from ui_tokens.
+3. Replaced ui_tokens.py with plain color definitions (no gradients).
+4. Changed the top bar initialization to not apply gradient (plain UI).
+
+The items.json file is already in the correct location and format.
+
+To test:
+1. Ensure tkinter and customtkinter are installed on Windows.
+2. Run RAT.py from the Rust-Admin-Tool directory.
+3. The UI should now appear plain without gradients, and the canvas.lower error should be resolved.

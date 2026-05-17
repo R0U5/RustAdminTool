@@ -1,0 +1,86 @@
+"""UI design tokens for Rust Admin Tool (R.A.T.)
+
+This module centralises colour, spacing and radius definitions so the UI can be
+styled consistently and updated easily. The values aim for a modern macOS‑
+style look with soft gradients, consistent paddings and subtle 3‑D weighting.
+"""
+
+# -- Colours ---------------------------------------------------------------
+# Light theme base – used for gradient backgrounds and surfaces
+LIGHT_BG = "#F5F7FA"          # Very light gray-blue
+LIGHT_SURFACE = "#FFFFFF"     # Pure white for cards
+# Dark theme (fallback) – retained for dark mode
+DARK_BG = "#0A0A0F"
+DARK_SURFACE = "#1A1A24"
+# Gradient stops for top bar / header (light mode)
+GRADIENT_START = "#E1E8F0"    # Soft pastel blue
+GRADIENT_END = "#F5F7FA"
+# Accent and semantic colours (used for buttons, status, etc.)
+ACCENT = "#4A6CF7"
+ACCENT_HOVER = "#5B7BFF"
+ACCENT_LIGHT = "#E8EDFD"
+SUCCESS = "#34D399"
+SUCCESS_SUBTLE = "#E8FDF5"
+WARNING = "#FBBF24"
+WARNING_SUBTLE = "#FEF9C3"
+DANGER = "#F87171"
+DANGER_SUBTLE = "#FEE2E2"
+INFO = "#60A5FA"
+INFO_SUBTLE = "#DBEAFE"
+# Text colours
+TEXT_PRIMARY = "#0A0A0F"
+TEXT_SECONDARY = "#666666"
+TEXT_TERTIARY = "#999999"
+# Border colours
+BORDER_SUBTLE = "#E0E0E0"
+BORDER_DEFAULT = "#C0C0C0"
+BORDER_FOCUS = ACCENT
+# Shadow colour (alpha included for subtle depth)
+SHADOW = "#00000033"  # 20 % black
+
+# Export as a dictionary compatible with the original code expectations
+COLORS = {
+    "bg_base": DARK_BG,
+    "bg_elevated": DARK_SURFACE,
+    "bg_surface": LIGHT_SURFACE,
+    "bg_hover": "#22222E",
+    "bg_active": "#2A2A38",
+    "border_subtle": BORDER_SUBTLE,
+    "border_default": BORDER_DEFAULT,
+    "border_focus": BORDER_FOCUS,
+    "text_primary": TEXT_PRIMARY,
+    "text_secondary": TEXT_SECONDARY,
+    "text_tertiary": TEXT_TERTIARY,
+    "accent": ACCENT,
+    "accent_hover": ACCENT_HOVER,
+    "accent_light": ACCENT_LIGHT,
+    "success": SUCCESS,
+    "success_subtle": SUCCESS_SUBTLE,
+    "warning": WARNING,
+    "warning_subtle": WARNING_SUBTLE,
+    "danger": DANGER,
+    "danger_subtle": DANGER_SUBTLE,
+    "info": INFO,
+    "info_subtle": INFO_SUBTLE,
+}
+
+# -- Spacing ---------------------------------------------------------------
+# Values are expressed in pixels – these map directly to the original
+# numeric string keys used throughout RAT.py so we keep the same naming.
+SPACE = {
+    "1": 4,   # 0.25rem (4 px)
+    "2": 8,   # 0.5rem
+    "3": 12,  # 0.75rem
+    "4": 16,  # 1rem
+    "5": 20,  # 1.25rem
+    "6": 24,  # 1.5rem
+    "8": 32,  # 2rem
+}
+
+# -- Border radius ----------------------------------------------------------
+RADIUS = {
+    "sm": 4,
+    "md": 8,
+    "lg": 12,
+    "xl": 16,
+}

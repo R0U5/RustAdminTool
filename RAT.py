@@ -22,7 +22,7 @@ import hashlib
 import secrets
 
 # Set CustomTkinter appearance
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
 
 # Pre-compile regex patterns for performance
@@ -31,30 +31,56 @@ PLAYER_REGEX = re.compile(
 )
 TAG_REGEX = re.compile(r"\[[^\]]+\]")
 
-# Color palette - Dark theme (section 2.2) - Valid 7-char hex for tkinter
+# UI design tokens for Rust Admin Tool (R.A.T.) - Plain UI version
+# This module centralises colour, spacing and radius definitions for a plain Tkinter UI.
+# Colors are simplified for a clean, normal appearance.
+
+# -- Colours ---------------------------------------------------------------
+# Simple, clean colors for a plain UI
 COLORS = {
-    'bg_base': '#0A0A0F',
-    'bg_elevated': '#12121A',
-    'bg_surface': '#1A1A24',
-    'bg_hover': '#22222E',
-    'bg_active': '#2A2A38',
-    'border_subtle': '#1E1E2A',
-    'border_default': '#2A2A3A',
-    'border_focus': '#4A6CF7',
-    'text_primary': '#E8E8ED',
-    'text_secondary': '#8888A0',
-    'text_tertiary': '#55556A',
-    'accent': '#4A6CF7',
-    'accent_hover': '#5B7BFF',
-    'accent_light': '#E8EDFD',  # Light version for subtle backgrounds
-    'success': '#34D399',
-    'success_subtle': '#E8FDF5',
-    'warning': '#FBBF24',
-    'warning_subtle': '#FEF9C3',
-    'danger': '#F87171',
-    'danger_subtle': '#FEE2E2',
-    'info': '#60A5FA',
-    'info_subtle': '#DBEAFE',
+    "bg_base": "#2b2b2b",           # Dark gray for main background
+    "bg_elevated": "#282828",       # Slightly lighter for elevated elements (made darker)
+    "bg_surface": "#ffffff",        # White for surfaces/cards
+    "bg_hover": "#3a3a3a",          # Hover state
+    "bg_active": "#404040",         # Active/pressed state
+    "border_subtle": "#4a4a4a",     # Subtle borders
+    "border_default": "#5a5a5a",    # Default borders
+    "border_focus": "#1f538d",      # Focused border (blue)
+    "text_primary": "#ffffff",      # Primary text (white on dark bg)
+    "text_secondary": "#b0b0b0",    # Secondary text
+    "text_tertiary": "#808080",     # Tertiary text/disabled
+    "accent": "#1f538d",            # Accent color (blue)
+    "accent_hover": "#2b63a0",      # Accent hover
+    "accent_light": "#e6f0ff",      # Accent light (for highlights)
+    "success": "#28a745",           # Success green
+    "success_subtle": "#d4edda",    # Success subtle background
+    "warning": "#ffc107",           # Warning orange
+    "warning_subtle": "#fff3cd",    # Warning subtle background
+    "danger": "#dc3545",            # Danger red
+    "danger_subtle": "#f8d7da",     # Danger subtle background
+    "info": "#17a2b8",              # Info blue
+    "info_subtle": "#d1ecf1",       # Info subtle background
+}
+
+# -- Spacing ---------------------------------------------------------------
+# Values are expressed in pixels – these map directly to the original
+# numeric string keys used throughout RAT.py so we keep the same naming.
+SPACE = {
+    "1": 4,   # 0.25rem (4px)
+    "2": 8,   # 0.5rem
+    "3": 12,  # 0.75rem
+    "4": 16,  # 1rem
+    "5": 20,  # 1.25rem
+    "6": 24,  # 1.5rem
+    "8": 32,  # 2rem
+}
+
+# -- Border radius ----------------------------------------------------------
+RADIUS = {
+    "sm": 4,
+    "md": 8,
+    "lg": 12,
+    "xl": 16,
 }
 
 # Font configuration with fallbacks (section 3.1)
@@ -67,25 +93,6 @@ def _font(family, size, weight='normal'):
     """Create font tuple with fallback"""
     base = FONTS[family]
     return (base[0], size, weight)  # tkinter uses first available from system
-
-# Spacing scale (section 4.1)
-SPACE = {
-    '1': 4,   # 0.25rem
-    '2': 8,   # 0.5rem
-    '3': 12,  # 0.75rem
-    '4': 16,  # 1rem
-    '5': 20,  # 1.25rem
-    '6': 24,  # 1.5rem
-    '8': 32,  # 2rem
-}
-
-# Border radius scale (section 6.1)
-RADIUS = {
-    'sm': 4,
-    'md': 8,
-    'lg': 12,
-    'xl': 16,
-}
 
 class ConfigManager:
     def __init__(self, path):
@@ -362,12 +369,16 @@ class WebRCONApp(ctk.CTk):
             config['hover_color'] = COLORS['accent_hover']
         elif style == 'destructive':
             config['fg_color'] = COLORS['danger_subtle']
-            config['text_color'] = COLORS['danger']
-            config['hover_color'] = COLORS['danger']
+            config['text_color'] = COLORS['text_primary']
+            config['hover_color'] = COLORS['danger_subtle']
         elif style == 'ghost':
             config['fg_color'] = 'transparent'
             config['text_color'] = COLORS['accent']
             config['hover_color'] = COLORS['bg_hover']
+        elif style == 'secondary':
+            # Add border for secondary buttons to match Teleport/Give Item style
+            config['border_width'] = 1
+            config['border_color'] = COLORS['border_default']
 
         config.update(kwargs)
         btn = ctk.CTkButton(parent, text=text, command=command, **config)
@@ -377,7 +388,7 @@ class WebRCONApp(ctk.CTk):
         """Create input with modern styling (section 5.4)"""
         config = {
             'fg_color': COLORS['bg_surface'],
-            'text_color': COLORS['text_primary'],
+            'text_color': '#000000',
             'font': _font('display', 12),
             'corner_radius': RADIUS['md'],
             'border_color': COLORS['border_default'],
@@ -446,36 +457,34 @@ class WebRCONApp(ctk.CTk):
         top = ctk.CTkFrame(self, fg_color=COLORS['bg_base'], height=56)
         top.pack(fill=tk.X, padx=SPACE['4'], pady=(SPACE['3'], 0))
         top.pack_propagate(False)
+        # Plain UI - no gradient
 
-        # Left side - Logo/Title
-        title_label = ctk.CTkLabel(top, text="R.A.T.", text_color=COLORS['accent'],
-                                     font=_font('display', 14, 'bold'))
-        title_label.pack(side=tk.LEFT, padx=(SPACE['2'], SPACE['4']))
+
 
         # Connection inputs
         ctk.CTkLabel(top, text="IP", text_color=COLORS['text_secondary'],
-                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], 2))
+                        font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['2'], SPACE['2']))
         self.ip_entry = self._create_entry(top, width=150)
         self.ip_entry.insert(0, ip)
-        self.ip_entry.pack(side=tk.LEFT, padx=(0, 2), pady=SPACE['2'])
+        self.ip_entry.pack(side=tk.LEFT, padx=(0, SPACE['2']), pady=SPACE['2'])
 
         ctk.CTkLabel(top, text="Port", text_color=COLORS['text_secondary'],
-                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], SPACE['2']))
         self.port_entry = self._create_entry(top, width=60)
         self.port_entry.insert(0, str(port))
-        self.port_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
+        self.port_entry.pack(side=tk.LEFT, padx=SPACE['2'], pady=SPACE['2'])
 
         ctk.CTkLabel(top, text="Password", text_color=COLORS['text_secondary'],
-                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], 2))
+                       font=_font('display', 10)).pack(side=tk.LEFT, padx=(SPACE['3'], SPACE['2']))
         self.password_entry = self._create_entry(top, show="*", width=300)
         self.password_entry.insert(0, password)
-        self.password_entry.pack(side=tk.LEFT, padx=2, pady=SPACE['2'])
+        self.password_entry.pack(side=tk.LEFT, padx=SPACE['2'], pady=SPACE['2'])
 
         # Connect/Disconnect buttons
-        self.connect_btn = self._create_button(top, "Connect", self._connect, style='primary')
-        self.connect_btn.pack(side=tk.LEFT, padx=(SPACE['3'], 2))
-
-        self.disconnect_btn = self._create_button(top, "Disconnect", self._disconnect, style='destructive')
+        self.connect_btn = self._create_button(top, "Connect", self._connect, style='secondary')
+        self.connect_btn.pack(side=tk.LEFT, padx=(SPACE['3'], SPACE['2']))
+ 
+        self.disconnect_btn = self._create_button(top, "Disconnect", self._disconnect, style='secondary')
         self.disconnect_btn.pack(side=tk.LEFT)
 
         # Right side - Status indicator (section 5.6)
@@ -535,26 +544,20 @@ class WebRCONApp(ctk.CTk):
         neutral_frame = ctk.CTkFrame(action_frame, fg_color=COLORS['bg_elevated'])
         neutral_frame.pack(side=tk.LEFT)
         btn = self._create_button(neutral_frame, "Teleport", self._teleport_to_selected, style='secondary')
-        btn.configure(border_width=1, border_color=COLORS['border_default'])
         btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
         btn = self._create_button(neutral_frame, "Give Item", self._give_item_dialog, style='secondary')
-        btn.configure(border_width=1, border_color=COLORS['border_default'])
         btn.pack(side=tk.LEFT)
 
         # Destructive actions group - visually separated
         destructive_frame = ctk.CTkFrame(action_frame, fg_color=COLORS['bg_elevated'])
         destructive_frame.pack(side=tk.LEFT, padx=(SPACE['6'], 0))
-        btn = self._create_button(destructive_frame, "Kick", self._kick_selected, style='destructive')
-        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn = self._create_button(destructive_frame, "Kick", self._kick_selected, style='secondary')
         btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
-        btn = self._create_button(destructive_frame, "Ban", self._ban_selected, style='destructive')
-        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn = self._create_button(destructive_frame, "Ban", self._ban_selected, style='secondary')
         btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
-        btn = self._create_button(destructive_frame, "Mute", self._mute_selected, style='destructive')
-        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn = self._create_button(destructive_frame, "Mute", self._mute_selected, style='secondary')
         btn.pack(side=tk.LEFT, padx=(0, SPACE['2']))
-        btn = self._create_button(destructive_frame, "Kill", self._kill_selected, style='destructive')
-        btn.configure(text_color='#0A0A0F', hover_color=COLORS['danger_subtle'], fg_color=COLORS['danger_subtle'])
+        btn = self._create_button(destructive_frame, "Kill", self._kill_selected, style='secondary')
         btn.pack(side=tk.LEFT)
 
         # Player treeview
@@ -614,20 +617,10 @@ class WebRCONApp(ctk.CTk):
         self.command_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=SPACE['2'])
         self.command_entry.bind("<Return>", self._send_command)
 
-        send_btn = self._create_button(bot, "Send", self._send_command, style='primary')
+        send_btn = self._create_button(bot, "Send", self._send_command, style='secondary')
         send_btn.pack(side=tk.LEFT, padx=(SPACE['2'], 0))
 
-        # Quick commands
-        quick_frame = ctk.CTkFrame(self, fg_color=COLORS['bg_base'])
-        quick_frame.pack(fill=tk.X, padx=SPACE['4'], pady=(0, SPACE['3']))
 
-        ctk.CTkLabel(quick_frame, text="Quick", text_color=COLORS['text_tertiary'],
-                       font=_font('display', 9, 'normal')).pack(side=tk.LEFT, padx=(SPACE['2'], SPACE['2']))
-
-        for cmd in ["status", "players", "banlistex", "serverinfo"]:
-            btn = self._create_button(quick_frame, cmd, lambda c=cmd: self._quick_command(c), style='secondary')
-            btn.configure(font=_font('mono', 9))
-            btn.pack(side=tk.LEFT, padx=SPACE['1'], pady=SPACE['1'])
 
         # Status bar
         self.status_bar = ctk.CTkLabel(self, text="Ready", text_color=COLORS['text_tertiary'],
@@ -649,12 +642,12 @@ class WebRCONApp(ctk.CTk):
         if connected:
             self.status_dot.delete("all")
             self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['success'], outline='')
-            self.status_label.configure(text="Connected", fg=COLORS['success'])
+            self.status_label.configure(text="Connected", text_color=COLORS['success'])
             self._update_status_bar(f"Connected to {self.ip_entry.get()}:{self.port_entry.get()}")
         else:
             self.status_dot.delete("all")
             self.status_dot.create_oval(0, 0, 8, 8, fill=COLORS['danger'], outline='')
-            self.status_label.configure(text="Disconnected", fg=COLORS['text_secondary'])
+            self.status_label.configure(text="Disconnected", text_color=COLORS['text_secondary'])
             self._update_status_bar("Disconnected")
 
     def _show_player_menu(self, event):
@@ -1003,4 +996,7 @@ class WebRCONApp(ctk.CTk):
 
 if __name__ == "__main__":
     app = WebRCONApp()
-    app.mainloop()
+    try:
+        app.mainloop()
+    except KeyboardInterrupt:
+        app._on_close()

@@ -1,0 +1,1 @@
+TASK COMPLETED: Fixed RAT.py UI to be plain/normal and resolved Tkinter errors
